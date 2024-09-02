@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Volume Monitor - Crypto Arbitrage Bot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+        }
+        h2 {
+            color: #555;
+        }
+        .section {
+            background-color: white;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        code {
+            background-color: #f0f0f0;
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            color: #d6336c;
+        }
+    </style>
+</head>
+<body>
+<h1>Volume Monitor - Crypto Arbitrage Bot</h1>
+
+<div class="section">
+    <h2>1. Introdução</h2>
+    <p>O monitor de volume é um componente essencial do bot de arbitragem de criptomoedas. Ele monitora o volume de negociação em tempo real para detectar tendências de alta ou baixa, usando médias móveis. Quando uma mudança significativa no volume é detectada, o monitor dispara eventos que indicam que o mercado pode estar em um bom momento para negociações.</p>
+</div>
+
+<div class="section">
+    <h2>2. Fórmulas e Cálculos</h2>
+    <p>O monitor de volume utiliza duas médias móveis para analisar a tendência de volume de negociações: uma média móvel de curto prazo (por exemplo, 10 minutos) e uma média móvel de longo prazo (por exemplo, 1 hora).</p>
+
+    <h3>2.1. Cálculo da Média Móvel</h3>
+    <p>A média móvel é calculada somando os valores de volume dos últimos <code>n</code> períodos e dividindo pelo número de períodos.</p>
+
+    <p><strong>Fórmula da Média Móvel:</strong></p>
+    <p>
+        <code>Média Móvel = (V1 + V2 + ... + Vn) / n</code>
+    </p>
+    <p>Onde <code>V1</code>, <code>V2</code>, ..., <code>Vn</code> são os volumes de negociação dos últimos <code>n</code> períodos.</p>
+
+    <h3>2.2. Análise de Tendência</h3>
+    <p>A análise de tendência compara a média móvel de curto prazo (SMA curto) com a média móvel de longo prazo (SMA longo):</p>
+    <ul>
+        <li>Se <code>SMA curto > SMA longo</code>: Tendência de aumento no volume (mercado aquecendo).</li>
+        <li>Se <code>SMA curto &lt;= SMA longo</code>: Volume estável ou em declínio.</li>
+    </ul>
+</div>
+
+<div class="section">
+    <h2>3. Eventos Disparados</h2>
+    <p>Quando o monitor de volume detecta uma tendência significativa de aumento no volume de negociações, ele dispara o evento <strong>"VolumeIncreaseEvent"</strong>. Esse evento sinaliza que o mercado pode estar em um bom momento para realizar negociações de arbitragem.</p>
+
+    <h3>3.1. VolumeIncreaseEvent</h3>
+    <p>Esse evento é disparado quando o volume de curto prazo excede significativamente o volume de longo prazo. O evento pode ser tratado por outros componentes do bot para iniciar negociações automáticas ou alertar o usuário sobre a oportunidade de arbitragem.</p>
+
+    <p><strong>Ações que podem ser tomadas após o evento:</strong></p>
+    <ul>
+        <li>Iniciar negociações automáticas.</li>
+        <li>Enviar alertas ao usuário.</li>
+        <li>Atualizar logs e dashboards com informações de tendência.</li>
+    </ul>
+</div>
+
+<div class="section">
+    <h2>4. Processos Chamados pelo Monitoramento</h2>
+    <p>O monitor de volume, ao detectar um aumento no volume, pode acionar diversos processos no sistema:</p>
+
+    <h3>4.1. Negociação Automática</h3>
+    <p>O bot pode iniciar um processo de negociação automática com base na oportunidade detectada. Isso pode incluir a compra e venda de criptomoedas em diferentes exchanges para aproveitar a arbitragem.</p>
+
+    <h3>4.2. Monitoramento Contínuo</h3>
+    <p>Mesmo após disparar um evento, o monitor continua a verificar o volume de negociação em intervalos regulares. Isso garante que o bot esteja sempre atualizado sobre as condições do mercado.</p>
+
+    <h3>4.3. Logging e Alertas</h3>
+    <p>O sistema pode registrar a atividade em logs e enviar alertas ao usuário (por e-mail, SMS ou notificações) quando uma oportunidade for detectada.</p>
+</div>
+
+<div class="section">
+    <h2>5. Conclusão</h2>
+    <p>O monitoramento de volume é uma ferramenta poderosa para identificar oportunidades de arbitragem em criptomoedas. Usando médias móveis e análise de tendências, o bot pode prever mudanças no mercado e agir rapidamente para maximizar os lucros.</p>
+</div>
+</body>
+</html>

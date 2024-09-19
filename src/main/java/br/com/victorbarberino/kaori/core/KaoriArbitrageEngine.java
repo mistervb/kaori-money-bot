@@ -1,44 +1,33 @@
 package br.com.victorbarberino.kaori.core;
 
-import br.com.victorbarberino.kaori.api.BinanceAPI;
-import br.com.victorbarberino.kaori.api.KrakenCustomAPI;
+import br.com.victorbarberino.kaori.core.arbitrage.ArbitrageExecutor;
+import br.com.victorbarberino.kaori.model.PropertiesData;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 public class KaoriArbitrageEngine {
-    private BinanceAPI binanceAPI;
-    private KrakenCustomAPI krakenAPI;
+    private ArbitrageExecutor arbitrageExecutor;
+    private ExecutorService executorService;
 
-    public KaoriArbitrageEngine(BinanceAPI binanceAPI, KrakenCustomAPI krakenAPI) {
-        this.binanceAPI = binanceAPI;
-        this.krakenAPI = krakenAPI;
+    public KaoriArbitrageEngine(PropertiesData pd) {
+        this.arbitrageExecutor = new ArbitrageExecutor(pd);
+        this.executorService = Executors.newFixedThreadPool(8);
     }
 
-    /**
-     * Perform arbitration if an opportunity exists.
-     * */
-    public void executeArbitrage() {
-        try {
-            //double binancePrice = binanceAPI.getPrice("BTCUSDT");
-            //double krakenPrice = krakenAPI.getPrice("BTCUSD");
-
-            if (isArbitrageOpportunity(0, 0)) {
-                // Execute buy and sell orders
-                System.out.println("Arbitrage opportunity found!");
+    public Future<Boolean> execute(double buyPrice, double sellPrice, double amount) {
+        return executorService.submit(() -> {
+            try {
+                arbitrageExecutor.executeArbitrage(buyPrice, sellPrice, amount);
+                return true;
+            } catch (Exception e) {
+                return false;
             }
-        } catch (Exception e) {
-            System.err.println("Deu erro");
-        }
+        });
     }
 
-    /**
-     * Checks whether there is an arbitrage opportunity based on the buy and sell price.
-     * <br>
-     * The formula used in this method is: <code>(sell  price - buy price) > 0</code>.
-     *
-     * @param buyPrice
-     * @param sellPrice
-     * @return <b>true</b> if the opportunity was found or <b>false</b> if it was not found.
-     * */
-    private boolean isArbitrageOpportunity(double buyPrice, double sellPrice) {
-        return (sellPrice - buyPrice) > 0;
+    public void shutdown() {
+        executorService.shutdown();
     }
 }

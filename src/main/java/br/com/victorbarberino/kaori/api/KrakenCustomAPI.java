@@ -172,4 +172,76 @@ public class KrakenCustomAPI {
             return false;
         }
     }
+
+    /**
+     * Espera o depósito aparecer na conta Kraken.
+     * @param symbol O símbolo da criptomoeda, por exemplo, "XXBTZUSD"
+     * @param amount A quantidade depositada
+     * @return true se o depósito for encontrado, false caso contrário
+     */
+    public boolean waitForDepositToAppearOnKraken(String symbol, double amount) {
+        long timeout = 40000; // Tempo máximo de espera em milissegundos (por exemplo, 40 segundos)
+        long interval = 2000; // Intervalo de checagem em milissegundos (por exemplo, 2 segundos)
+        long startTime = System.currentTimeMillis();
+
+        while (System.currentTimeMillis() - startTime < timeout) {
+            try {
+                // Consultar a API da Kraken para obter os depósitos recentes
+                JsonNode depositInfo = krakenApi.query(KrakenAPI.Private.DEPOSIT_STATUS, null);
+
+                // Verificar se o depósito desejado está presente
+                if (hasDeposit(depositInfo, symbol, amount)) {
+                    return true; // O depósito foi encontrado
+                }
+
+                Thread.sleep(interval); // Aguardar antes de verificar novamente
+            } catch (Exception e) {
+                // Tratar exceções como problemas de rede ou erros da API
+                e.printStackTrace();
+            }
+        }
+
+        return false; // O depósito não foi encontrado dentro do tempo limite
+    }
+
+    private boolean hasDeposit(JsonNode depositInfo, String symbol, double amount) {
+        // Implementar lógica para verificar se o depósito está presente na resposta
+        // Isso pode depender do formato específico da resposta da API da Kraken
+        JsonNode deposits = depositInfo.get("deposits");
+        for (JsonNode deposit : deposits) {
+            if (deposit.get("symbol").asText().equals(symbol) && deposit.get("amount").asDouble() >= amount) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public String getDepositAddress(String asset) {
+        Map<String, String> params = new HashMap<>();
+        params.put("asset", asset); // Criptomoeda para a qual obter o endereço de depósito
+
+        try {
+            // Fazer a requisição à API privada de DepositAddresses
+            JsonNode response = krakenApi.query(KrakenAPI.Private.DEPOSIT_ADDRESSES, params);
+
+            // Verificar se há erros
+            if (response.has("error") && response.get("error").size() > 0) {
+                System.err.println("Failed to get deposit address: " + response.get("error"));
+                return null;
+            }
+
+            // Verificar e retornar o endereço de depósito
+            JsonNode result = response.get("result");
+            if (result != null && result.has(asset)) {
+                JsonNode addresses = result.get(asset);
+                if (addresses.isArray() && addresses.size() > 0) {
+                    return addresses.get(0).asText(); // Retorna o primeiro endereço
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return null; // Endereço não encontrado
+    }
 }

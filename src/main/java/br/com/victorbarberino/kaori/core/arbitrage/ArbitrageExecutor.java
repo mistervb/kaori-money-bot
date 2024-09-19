@@ -96,11 +96,12 @@ public class ArbitrageExecutor {
             // Vender na exchange mais cara (exemplo: Kraken)
             log.info("Placing sell order on Kraken for {} units at ${}", amount, sellPrice);
             boolean sellSuccess = krakenAPI.placeSellOrder(pd.getKrakenTargetSymbol(), amount, sellPrice);
+          
             if (!sellSuccess) {
                 log.error("Failed to place sell order on Kraken.");
                 return false;
             }
-
+          
             log.info("Arbitrage transaction completed successfully.");
             return true;
         } catch (Exception e) {

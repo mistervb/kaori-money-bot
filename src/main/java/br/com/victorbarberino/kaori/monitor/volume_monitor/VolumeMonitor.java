@@ -90,7 +90,7 @@ public class VolumeMonitor implements Monitor {
         log.info("Volume growth percentage: {}%", growth);
         return growth > threshold || growth > (threshold * 0.5); // Exemplo de relaxamento
     }
-
+  
     private void monitorVolume() throws Exception {
         log.info("Updating monitoring......");
         updateVolumes();
@@ -186,7 +186,7 @@ public class VolumeMonitor implements Monitor {
 
         // Bloqueia até obter o resultado (true ou false)
         Boolean success = future.get();
-
+      
         if (success) {
             log.info("Arbitrage executed successfully.");
         } else {

@@ -139,8 +139,6 @@ public class BinanceAPI {
             return false;
         }
     }
-
-
     /**
      * Realiza uma solicitação de saque de ativos da Binance.
      * @param asset O ativo a ser sacado, por exemplo, "BTC"

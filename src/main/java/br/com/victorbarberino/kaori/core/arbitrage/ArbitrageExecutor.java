@@ -71,15 +71,38 @@ public class ArbitrageExecutor {
                 return false;
             }
 
+            String krakenDepositAddress = krakenAPI.getDepositAddress(pd.getKrakenTargetSymbol());
+            if(krakenDepositAddress == null) {
+                log.error("Failed to get kraken deposit address.");
+                return false;
+            }
+
+            // Transferir o ativo comprado para a carteira da kraken
+            log.info("Withdrawing asset from Binance to Kraken address.");
+            boolean withdrawSuccess = binanceAPI.withdraw(pd.getBinanceTargetSymbol(), amount, krakenDepositAddress, null);
+            if(!withdrawSuccess) {
+                log.error("Failed to withdraw asset from Binance.");
+                return false;
+            }
+
+            // Esperar até que o ativo seja confirmado na rede e esteja disponível na Kraken
+            log.info("Waiting for deposit to appear on Kraken.");
+            boolean depositSuccess = krakenAPI.waitForDepositToAppearOnKraken(pd.getKrakenTargetSymbol(), amount);
+            if (!depositSuccess) {
+                System.err.println("Failed to deposit asset into Kraken.");
+                return false;
+            }
+
             // Vender na exchange mais cara (exemplo: Kraken)
             log.info("Placing sell order on Kraken for {} units at ${}", amount, sellPrice);
             boolean sellSuccess = krakenAPI.placeSellOrder(pd.getKrakenTargetSymbol(), amount, sellPrice);
-
+          
             if (!sellSuccess) {
                 log.error("Failed to place sell order on Kraken.");
                 return false;
             }
-
+          
+            log.info("Arbitrage transaction completed successfully.");
             return true;
         } catch (Exception e) {
             log.error("Error during arbitrage execution: {}", e.getMessage());

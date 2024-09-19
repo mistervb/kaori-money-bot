@@ -139,4 +139,40 @@ public class BinanceAPI {
             return false;
         }
     }
+    /**
+     * Realiza uma solicitação de saque de ativos da Binance.
+     * @param asset O ativo a ser sacado, por exemplo, "BTC"
+     * @param amount A quantidade a ser sacada
+     * @param address O endereço de saque para onde o ativo será enviado
+     * @param addressTag (Opcional) Uma tag para o endereço, se necessário
+     * @return true se o saque foi solicitado com sucesso, false caso contrário
+     */
+    public boolean withdraw(String asset, double amount, String address, String addressTag) {
+        LinkedHashMap<String, Object> parameters = new LinkedHashMap<>();
+        parameters.put("asset", asset);
+        parameters.put("amount", amount);
+        parameters.put("address", address);
+
+        if (addressTag != null && !addressTag.isEmpty()) {
+            parameters.put("addressTag", addressTag);
+        }
+
+        try {
+            // Faz a solicitação de saque
+            String response = spotClient.createWallet().withdraw(parameters);
+            JSONObject jsonResponse = new JSONObject(response);
+
+            // Verifica o status da resposta
+            if (jsonResponse.has("code") && jsonResponse.getInt("code") == 200) {
+                System.out.println("Withdraw request placed successfully: " + jsonResponse.toString(2));
+                return true;
+            } else {
+                System.out.println("Failed to place withdraw request: " + jsonResponse.toString(2));
+                return false;
+            }
+        } catch (Exception e) {
+            System.err.println("Error placing withdraw request: " + e.getMessage());
+            return false;
+        }
+    }
 }

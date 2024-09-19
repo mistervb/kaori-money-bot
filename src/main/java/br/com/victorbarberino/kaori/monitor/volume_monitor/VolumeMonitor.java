@@ -2,7 +2,7 @@ package br.com.victorbarberino.kaori.monitor.volume_monitor;
 
 import br.com.victorbarberino.kaori.api.BinanceAPI;
 import br.com.victorbarberino.kaori.api.KrakenCustomAPI;
-import br.com.victorbarberino.kaori.core.arbitrage.ArbitrageExecutor;
+import br.com.victorbarberino.kaori.core.KaoriArbitrageEngine;
 import br.com.victorbarberino.kaori.model.PropertiesData;
 import br.com.victorbarberino.kaori.model.VolumeData;
 import br.com.victorbarberino.kaori.monitor.Monitor;
@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -28,6 +29,7 @@ public class VolumeMonitor implements Monitor {
     private double longTermSum;
     private BinanceAPI binanceAPI;
     private KrakenCustomAPI krakenAPI;
+    private KaoriArbitrageEngine kaoriArbitrageEngine;
     private PropertiesData pd;
     private double transactionFees; // Taxas de transação
 
@@ -37,13 +39,14 @@ public class VolumeMonitor implements Monitor {
     }
 
     public void init(int shortTermPeriod, int longTermPeriod) {
-        this.shortTermVolumes = new LinkedList<>();
-        this.longTermVolumes  = new LinkedList<>();
-        this.shortTermPeriod  = shortTermPeriod;
-        this.longTermPeriod   = longTermPeriod;
-        this.binanceAPI       = new BinanceAPI(this.pd);
-        this.krakenAPI        = new KrakenCustomAPI(this.pd);
-        this.transactionFees  = pd.getTransactionFees();
+        this.shortTermVolumes     = new LinkedList<>();
+        this.longTermVolumes      = new LinkedList<>();
+        this.shortTermPeriod      = shortTermPeriod;
+        this.longTermPeriod       = longTermPeriod;
+        this.binanceAPI           = new BinanceAPI(this.pd);
+        this.krakenAPI            = new KrakenCustomAPI(this.pd);
+        this.transactionFees      = pd.getTransactionFees();
+        this.kaoriArbitrageEngine = new KaoriArbitrageEngine(this.pd);
     }
 
     private void addVolume(double volume) {
@@ -87,8 +90,8 @@ public class VolumeMonitor implements Monitor {
         log.info("Volume growth percentage: {}%", growth);
         return growth > threshold || growth > (threshold * 0.5); // Exemplo de relaxamento
     }
-
-    private void monitorVolume() {
+  
+    private void monitorVolume() throws Exception {
         log.info("Updating monitoring......");
         updateVolumes();
 
@@ -121,7 +124,7 @@ public class VolumeMonitor implements Monitor {
         logAdditionalData(binanceVolume, krakenVolume);
     }
 
-    private void updateVolumes() {
+    private void updateVolumes() throws Exception {
         VolumeData binanceVolume = this.binanceAPI.getVolume(pd.getBinanceTargetSymbol());
         VolumeData krakenVolume = this.krakenAPI.getVolume(pd.getKrakenTargetSymbol());
 
@@ -163,21 +166,27 @@ public class VolumeMonitor implements Monitor {
                 krakenVolume.getWeightedAvgPrice(), krakenHighPrice, krakenLowPrice, krakenPriceChange, krakenTradesCount);
     }
 
-    private void triggerVolumeIncreaseEvent() {
+    private void triggerVolumeIncreaseEvent() throws Exception {
         System.out.println("****************************************");
         System.out.println("**         OPPORTUNITY FOUND!         **");
         System.out.println("****************************************");
         log.info("Volume surge event triggered! The market may be in a good time to trade.");
 
-        // Definir o preço de compra e venda baseados nos dados de monitoramento
-        double buyPrice = 0.0; // Preço da exchange mais barata (exemplo: Binance)
-        double sellPrice = 0.0; // Preço da exchange mais cara (exemplo: Kraken)
-        double amount = 0.0; // Quantidade de criptomoedas a comprar e vender
+        // Obter preços das exchanges
+        VolumeData binanceVolume = this.binanceAPI.getVolume(pd.getBinanceTargetSymbol());
+        VolumeData krakenVolume = this.krakenAPI.getVolume(pd.getKrakenTargetSymbol());
+
+        double buyPrice = binanceVolume.getLowPrice(); // Preço da exchange mais barata (exemplo: Binance)
+        double sellPrice = krakenVolume.getHighPrice(); // Preço da exchange mais cara (exemplo: Kraken)
+        double amount = 0.3; // Quantidade de criptomoedas a comprar e vender
 
         // Criar um ArbitrageExecutor e tentar executar a arbitragem
-        ArbitrageExecutor arbitrageExecutor = new ArbitrageExecutor(pd);
-        boolean success = arbitrageExecutor.executeArbitrage(buyPrice, sellPrice, amount);
+        // Chama o método execute e obtém o Future<Boolean>
+        Future<Boolean> future = this.kaoriArbitrageEngine.execute(buyPrice, sellPrice, amount);
 
+        // Bloqueia até obter o resultado (true ou false)
+        Boolean success = future.get();
+      
         if (success) {
             log.info("Arbitrage executed successfully.");
         } else {
@@ -200,7 +209,11 @@ public class VolumeMonitor implements Monitor {
             log.info("[VOLUME MONITOR] Initializing volume monitoring asynchronously with interval: {} minute(s)", pd.getMonitorIntervalPeriod());
             scheduler.scheduleAtFixedRate(() -> {
                 log.info("[VOLUME MONITOR] Task triggered");
-                monitorVolume();
+                try {
+                    monitorVolume();
+                } catch (Exception e) {
+                    log.error("it was not possible to perform monitoring.");
+                }
             }, 0, pd.getMonitorIntervalPeriod(), TimeUnit.MINUTES);
         });
     }
@@ -213,6 +226,7 @@ public class VolumeMonitor implements Monitor {
             if (!scheduler.awaitTermination(1, TimeUnit.MINUTES)) {
                 log.warn("[VOMLUME MONITOR] Forcing volume monitoring to stop...");
                 scheduler.shutdownNow();
+                this.kaoriArbitrageEngine.shutdown();
             }
         } catch (InterruptedException e) {
             scheduler.shutdownNow();
